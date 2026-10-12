@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>꾸며주는 말 탐험대 🌟</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Gaegu & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-gaegu {
+            font-family: 'Gaegu', cursive;
+        }
+        .pop-card {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .pop-card:hover {
+            transform: translateY(-6px) scale(1.02);
+        }
+        .pop-card:active {
+            transform: translateY(2px) scale(0.98);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Memory Card Flip Styles */
+        .card-perspective {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+            transform-style: preserve-3d;
+        }
+        .card-flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Floating Balloon Animation */
+        @keyframes floatUp {
+            0% { transform: translateY(110%) scale(0.9); opacity: 1; }
+            100% { transform: translateY(-120%) scale(1.05); opacity: 0.9; }
+        }
+        .balloon-item {
+            position: absolute;
+            animation-name: floatUp;
+            animation-timing-function: linear;
+            animation-iteration-count: 1;
+            will-change: transform;
+        }
+
+        /* Floating Score Feedback Animation */
+        @keyframes floatAndFade {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            50% { transform: translateY(-30px) scale(1.15); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1); opacity: 0; }
+        }
+        .floating-feedback {
+            position: absolute;
+            pointer-events: none;
+            animation: floatAndFade 0.9s forwards ease-out;
+            z-index: 50;
+            font-weight: 900;
+        }
+
+        /* Big Train Circuit Track Animation */
+        @keyframes trainTrackCircuit {
+            0% { transform: translate(0, 0) scale(1); }
+            20% { transform: translate(80px, -15px) rotate(3deg) scale(1.05); }
+            40% { transform: translate(160px, 0px) rotate(0deg) scale(1.08); }
+            60% { transform: translate(-160px, 0px) rotate(-3deg) scale(0.95); }
+            80% { transform: translate(-80px, -15px) rotate(-1deg) scale(0.98); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        .animate-train-circuit {
+            animation: trainTrackCircuit 3.2s ease-in-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-gray-800 p-3 md:p-6 overflow-x-hidden">
+
+    <!-- Top Navigation / User Status Bar -->
+    <header class="max-w-4xl mx-auto w-full bg-white/95 backdrop-blur border-4 border-amber-300 rounded-3xl p-4 md:p-5 shadow-lg flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="showScreen('home-screen')">
+            <span class="text-4xl md:text-5xl animate-bounce">🎨</span>
+            <div>
+                <h1 class="font-gaegu text-3xl md:text-5xl font-black text-amber-600 leading-tight">꾸며주는 말 탐험대</h1>
+                <p class="text-xs md:text-base text-gray-500 font-bold">생생하게 표현하는 예쁜 우리말</p>
+            </div>
+        </div>
+
+        <!-- Student Profile Display Bar -->
+        <div id="user-profile-bar" class="hidden flex items-center gap-3 md:gap-4 bg-amber-100/90 px-4 py-2.5 rounded-2xl border-3 border-amber-300 shadow-sm">
+            <div id="current-avatar" class="text-3xl md:text-4xl">🐥</div>
+            <div class="text-left">
+                <div class="flex items-center gap-2">
+                    <span id="current-user-name" class="font-black text-gray-900 text-xl md:text-2xl">학생 이름</span>
+                    <span id="current-badge-title" class="text-xs md:text-sm bg-amber-300 text-amber-900 px-2.5 py-0.5 rounded-full font-black shadow-sm">꾸밈 새싹</span>
+                </div>
+                <div class="mt-1 text-xs md:text-sm text-gray-800 font-black flex items-center gap-1.5">
+                    <span>누적 점수:</span>
+                    <span class="bg-amber-500 text-white px-3 py-0.5 rounded-xl font-black text-base md:text-lg shadow-sm border border-amber-600 inline-flex items-center gap-0.5">
+                        <span id="cumulative-score">0</span>점
+                    </span>
+                </div>
+            </div>
+            <button onclick="changeUser()" class="ml-2 text-xs md:text-sm bg-amber-200 hover:bg-amber-300 text-amber-900 px-3 py-2 rounded-xl font-extrabold transition border border-amber-300 shadow-sm">
+                이름 변경
+            </button>
+        </div>
+    </header>
+
+    <!-- Custom Notification Toast Dialog (Replaces browser alert) -->
+    <div id="toast-message" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 hidden bg-amber-500 text-white font-extrabold px-6 py-3 rounded-2xl shadow-2xl border-2 border-amber-300 transition-all flex items-center gap-2 text-lg">
+        <span id="toast-icon">💡</span>
+        <span id="toast-text">안내 메시지</span>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto w-full flex-grow my-4 flex flex-col justify-center items-center">
+
+        <!-- 1. HOME SCREEN / LOGIN -->
+        <section id="home-screen" class="w-full bg-white rounded-3xl border-4 border-sky-300 p-6 md:p-8 shadow-xl text-center space-y-6">
+            <div class="space-y-2">
+                <span class="inline-block px-4 py-1 bg-sky-100 text-sky-700 font-bold rounded-full text-sm">특수학급 국어 즐거운 배움터</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800">
+                    탐험가 이름을 입력해 주세요! 👋
+                </h2>
+                <p class="text-gray-600 text-base md:text-lg">이름을 적으면 모은 점수가 기기에 기억돼요!</p>
+            </div>
+
+            <div class="max-w-md mx-auto space-y-5">
+                <!-- Avatar Selection -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-2">나만의 아바타 선택하기:</label>
+                    <div class="flex justify-center gap-2 md:gap-3 py-1">
+                        <button type="button" onclick="selectAvatar('🐥', this)" class="avatar-opt text-3xl p-3 border-4 border-amber-400 rounded-2xl bg-amber-50 transition transform hover:scale-110 focus:outline-none">🐥</button>
+                        <button type="button" onclick="selectAvatar('🐰', this)" class="avatar-opt text-3xl p-3 border-2 border-gray-200 rounded-2xl hover:bg-amber-50 transition transform hover:scale-110 focus:outline-none">🐰</button>
+                        <button type="button" onclick="selectAvatar('🦁', this)" class="avatar-opt text-3xl p-3 border-2 border-gray-200 rounded-2xl hover:bg-amber-50 transition transform hover:scale-110 focus:outline-none">🦁</button>
+                        <button type="button" onclick="selectAvatar('🚀', this)" class="avatar-opt text-3xl p-3 border-2 border-gray-200 rounded-2xl hover:bg-amber-50 transition transform hover:scale-110 focus:outline-none">🚀</button>
+                        <button type="button" onclick="selectAvatar('🐱', this)" class="avatar-opt text-3xl p-3 border-2 border-gray-200 rounded-2xl hover:bg-amber-50 transition transform hover:scale-110 focus:outline-none">🐱</button>
+                    </div>
+                </div>
+
+                <input type="text" id="student-name-input" placeholder="학생 이름을 입력하세요 (예: 민수)" 
+                       class="w-full text-center text-xl md:text-2xl font-bold p-4 border-4 border-sky-200 rounded-2xl focus:border-sky-400 focus:outline-none shadow-inner"
+                       onkeyup="if(event.key === 'Enter') startExploration()">
+
+                <button onclick="startExploration()" class="w-full bg-amber-400 hover:bg-amber-500 text-amber-950 text-2xl font-black p-4 rounded-2xl shadow-lg border-b-4 border-amber-600 pop-card flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> 탐험 시작하기!
+                </button>
+            </div>
+
+            <!-- Saved Users Quick Selection -->
+            <div id="saved-users-container" class="hidden pt-4 border-t border-gray-200">
+                <p class="text-sm font-bold text-gray-500 mb-2">저장된 탐험가 목록 (바로 클릭 가능):</p>
+                <div id="saved-users-list" class="flex flex-wrap justify-center gap-2"></div>
+            </div>
+        </section>
+
+        <!-- 2. GAME MODE SELECT SCREEN (5 MODES) -->
+        <section id="mode-screen" class="hidden w-full space-y-6">
+            <div class="bg-amber-100 border-4 border-amber-300 rounded-2xl p-4 text-center relative shadow-sm">
+                <div class="flex items-center justify-center gap-2">
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-amber-900">
+                        <span id="welcome-user-text">민수</span> 탐험가님, 어떤 공부를 해볼까요? 🎯
+                    </h2>
+                    <button onclick="speakWelcomeMessage()" class="bg-amber-200 hover:bg-amber-300 text-amber-900 p-2.5 rounded-2xl text-xl transition pop-card flex items-center gap-1 shadow-sm" title="소리내어 읽기">
+                        🔊 <span class="text-xs font-black hidden sm:inline">읽기</span>
+                    </button>
+                </div>
+                <p id="welcome-subtext" class="text-amber-800 text-sm md:text-base font-bold mt-1">마음에 드는 게임 버튼을 누르면 신나게 공부할 수 있어요!</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Mode 1 -->
+                <div onclick="launchGame(1)" class="bg-white border-4 border-rose-300 rounded-3xl p-5 text-center shadow-lg pop-card cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="text-5xl mb-3 animate-float">🍎</div>
+                        <h3 class="text-xl font-black text-rose-600 mb-2">1. 그림 짝꿍 찾기</h3>
+                        <p class="text-gray-600 font-bold text-xs md:text-sm">그림을 보고 딱 어울리는 꾸며주는 말을 골라봐요!</p>
+                    </div>
+                    <div class="mt-4 bg-rose-100 text-rose-700 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1">
+                        <span>시작하기</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <!-- Mode 2 -->
+                <div onclick="launchGame(2)" class="bg-white border-4 border-sky-300 rounded-3xl p-5 text-center shadow-lg pop-card cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="text-5xl mb-3 animate-float">✏️</div>
+                        <h3 class="text-xl font-black text-sky-600 mb-2">2. 예쁜 문장 완성</h3>
+                        <p class="text-gray-600 font-bold text-xs md:text-sm">문장 속 빈칸에 알맞은 꾸밈말을 쏙쏙 넣어줘요!</p>
+                    </div>
+                    <div class="mt-4 bg-sky-100 text-sky-700 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1">
+                        <span>시작하기</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <!-- Mode 3 -->
+                <div onclick="launchGame(3)" class="bg-white border-4 border-emerald-300 rounded-3xl p-5 text-center shadow-lg pop-card cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="text-5xl mb-3 animate-float">🎈</div>
+                        <h3 class="text-xl font-black text-emerald-600 mb-2">3. 꾸밈말 풍선 잡기</h3>
+                        <p class="text-gray-600 font-bold text-xs md:text-sm">둥둥 뜨는 풍선 중 꾸며주는 말만 팡팡 터뜨려요!</p>
+                    </div>
+                    <div class="mt-4 bg-emerald-100 text-emerald-700 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1">
+                        <span>시작하기</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <!-- Mode 4 -->
+                <div onclick="launchGame(4)" class="bg-white border-4 border-purple-300 rounded-3xl p-5 text-center shadow-lg pop-card cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="text-5xl mb-3 animate-float">🃏</div>
+                        <h3 class="text-xl font-black text-purple-600 mb-2">4. 카드 짝맞추기</h3>
+                        <p class="text-gray-600 font-bold text-xs md:text-sm">카드 뒤에 숨은 꾸밈말과 그림 짝을 찾아내요!</p>
+                    </div>
+                    <div class="mt-4 bg-purple-100 text-purple-700 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1">
+                        <span>시작하기</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <!-- Mode 5 -->
+                <div onclick="launchGame(5)" class="bg-white border-4 border-amber-300 rounded-3xl p-5 text-center shadow-lg pop-card cursor-pointer flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+                    <div>
+                        <div class="text-5xl mb-3 animate-float">🚂</div>
+                        <h3 class="text-xl font-black text-amber-600 mb-2">5. 꾸밈말 기차 조립</h3>
+                        <p class="text-gray-600 font-bold text-xs md:text-sm">[꾸밈말 칸]과 [이름 칸]을 순서대로 연결해봐요!</p>
+                    </div>
+                    <div class="mt-4 bg-amber-100 text-amber-800 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-1">
+                        <span>시작하기</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rank & Badge Progress Status Card -->
+            <div class="bg-white border-4 border-indigo-200 rounded-3xl p-5 shadow-md flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="text-4xl bg-indigo-50 p-3 rounded-2xl border border-indigo-100">🏆</div>
+                    <div>
+                        <h4 class="text-lg font-bold text-indigo-900">나의 칭찬 뱃지 모음</h4>
+                        <p class="text-xs text-indigo-600">점수를 올려서 뱃지를 모두 모아보세요!</p>
+                    </div>
+                </div>
+                <div id="badge-collection" class="flex flex-wrap gap-2 text-2xl bg-indigo-50 p-2 rounded-xl border border-indigo-100">
+                    <!-- Badges injected dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. GAME ENGINE SCREEN (Modes 1 & 2 Quizzes) -->
+        <section id="game-screen" class="hidden w-full bg-white rounded-3xl border-4 border-amber-300 p-6 shadow-2xl space-y-6">
+            <div class="flex justify-between items-center border-b-2 border-gray-100 pb-4">
+                <button onclick="backToMenu()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-bold text-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i> 목록으로
+                </button>
+                <div class="text-lg font-extrabold text-amber-600">
+                    문제 <span id="quiz-current-num">1</span> / <span id="quiz-total-num">5</span>
+                </div>
+                <div class="text-xl font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                    +<span id="game-session-score">0</span>점
+                </div>
+            </div>
+
+            <div class="text-center space-y-4">
+                <div id="quiz-image" class="text-7xl md:text-8xl my-2 animate-bounce">🍎</div>
+                <div class="flex items-center justify-center gap-2">
+                    <div id="quiz-question" class="text-2xl md:text-3xl font-extrabold text-gray-800 bg-amber-50 p-4 rounded-2xl border-2 border-amber-200 flex-grow">
+                        [ ___ ] 사과
+                    </div>
+                    <button onclick="speakQuizQuestion()" class="bg-amber-300 hover:bg-amber-400 text-amber-950 p-4 rounded-2xl text-2xl transition pop-card shadow-md flex-shrink-0" title="문제 읽어주기">
+                        🔊
+                    </button>
+                </div>
+                <p id="quiz-hint" class="text-gray-500 font-bold text-base">사과를 나타내는 꾸며주는 말은 무엇일까요?</p>
+            </div>
+
+            <div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <!-- Option buttons generated dynamically -->
+            </div>
+
+            <div id="feedback-message" class="hidden text-center p-4 rounded-2xl font-black text-2xl animate-bounce"></div>
+        </section>
+
+        <!-- 4. BALLOON POP GAME SCREEN (Mode 3) -->
+        <section id="balloon-screen" class="hidden w-full bg-white rounded-3xl border-4 border-emerald-300 p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b-2 border-gray-100 pb-3">
+                <button onclick="endBalloonGame()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-bold text-gray-700">
+                    <i class="fa-solid fa-xmark"></i> 그만하기
+                </button>
+                <div class="text-center">
+                    <span class="text-sm font-bold text-gray-500">목표: </span>
+                    <span class="text-base md:text-lg font-black text-emerald-600">꾸며주는 말 풍선만 터뜨려요!</span>
+                </div>
+                <div class="text-xl font-black text-amber-600 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200">
+                    시간: <span id="balloon-timer">30</span>초
+                </div>
+            </div>
+
+            <!-- Visual Legend Guide Box for Special Class Students -->
+            <div class="grid grid-cols-2 gap-2 text-center text-xs md:text-sm font-extrabold">
+                <div class="bg-emerald-100 border-2 border-emerald-300 text-emerald-800 p-2 rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
+                    <span class="text-lg">⭕</span>
+                    <span><b>맞는 풍선 (+10점):</b> 예쁜, 커다란, 달콤한, 쌩쌩 등</span>
+                </div>
+                <div class="bg-rose-100 border-2 border-rose-300 text-rose-800 p-2 rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
+                    <span class="text-lg">❌</span>
+                    <span><b>틀린 풍선 (-5점):</b> 책상, 하늘, 자다, 가방 등</span>
+                </div>
+            </div>
+
+            <!-- Balloon Canvas Area -->
+            <div id="balloon-stage" class="relative w-full h-80 md:h-96 bg-sky-100 rounded-2xl border-2 border-sky-200 overflow-hidden cursor-pointer">
+                <!-- Floating balloons dynamically generated -->
+            </div>
+        </section>
+
+        <!-- 5. CARD MEMORY MATCH GAME (Mode 4) -->
+        <section id="card-screen" class="hidden w-full bg-white rounded-3xl border-4 border-purple-300 p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b-2 border-gray-100 pb-3">
+                <button onclick="backToMenu()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-bold text-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i> 목록으로
+                </button>
+                <div class="text-lg font-extrabold text-purple-700">
+                    알맞은 꾸밈말과 그림 짝을 찾아요!
+                </div>
+                <div class="text-xl font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                    찾은 짝: <span id="card-pairs-found">0</span>/4
+                </div>
+            </div>
+
+            <div id="card-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-2 min-h-[320px]">
+                <!-- Memory cards dynamically populated -->
+            </div>
+        </section>
+
+        <!-- 6. TRAIN BUILDER GAME (Mode 5 - Big Train with Railway Loop Animation) -->
+        <section id="train-screen" class="hidden w-full bg-white rounded-3xl border-4 border-amber-300 p-6 shadow-2xl space-y-6">
+            <div class="flex justify-between items-center border-b-2 border-gray-100 pb-3">
+                <button onclick="backToMenu()" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-bold text-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i> 목록으로
+                </button>
+                <div class="text-xl font-extrabold text-amber-700 flex items-center gap-2">
+                    <span>🚂 기차 잇기</span>
+                    <span class="text-sm bg-amber-100 px-3 py-1 rounded-full text-amber-900 font-bold"><span id="train-current-num">1</span> / <span id="train-total-num">4</span></span>
+                </div>
+                <div class="text-xl font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
+                    +<span id="train-session-score">0</span>점
+                </div>
+            </div>
+
+            <!-- Target Prompt -->
+            <div class="text-center space-y-2 bg-amber-50 p-4 rounded-2xl border-2 border-amber-200 shadow-sm">
+                <div class="text-sm text-amber-800 font-bold">🎯 완성할 목표 표현</div>
+                <div id="train-target-text" class="text-3xl md:text-4xl font-black text-amber-900 tracking-wide">
+                    "새빨간 사과"
+                </div>
+            </div>
+
+            <!-- Railway Track Area with Big Train Circuit -->
+            <div class="relative w-full bg-sky-100 rounded-3xl border-4 border-sky-300 p-6 min-h-[280px] flex flex-col justify-center items-center overflow-hidden shadow-inner">
+                <!-- Visual Railway Track lines -->
+                <div class="absolute inset-x-4 bottom-8 h-8 border-b-8 border-t-8 border-amber-800/60 bg-[repeating-linear-gradient(90deg,#78350f,#78350f_12px,#fef3c7_12px,#fef3c7_24px)] rounded-lg opacity-80 pointer-events-none"></div>
+
+                <!-- Animated Big Train Compound -->
+                <div id="train-track-container" class="relative z-10 transition-all duration-300 my-2">
+                    <div id="train-assembly-box" class="flex flex-wrap md:flex-nowrap items-end justify-center gap-2 md:gap-4">
+                        
+                        <!-- Engine (기관차) -->
+                        <div class="relative flex flex-col items-center">
+                            <div id="train-steam-cloud" class="hidden absolute -top-10 left-6 text-3xl animate-bounce">💨</div>
+                            <div class="bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 text-white p-4 rounded-3xl shadow-xl border-4 border-amber-300 text-center flex flex-col items-center justify-center min-w-[110px] md:min-w-[140px] h-28 md:h-36">
+                                <span class="text-5xl md:text-7xl animate-bounce">🚂</span>
+                                <span class="text-xs md:text-sm font-black bg-amber-900/50 px-2.5 py-0.5 rounded-full mt-1">기관차</span>
+                            </div>
+                            <!-- Engine Wheels -->
+                            <div class="flex justify-around w-full mt-1 px-2 text-gray-700 text-xl md:text-2xl">
+                                <span id="wheel-1" class="inline-block">⚙️</span>
+                                <span id="wheel-2" class="inline-block">⚙️</span>
+                            </div>
+                        </div>
+
+                        <div class="text-3xl font-black text-amber-600 mb-10 font-mono">🔗</div>
+
+                        <!-- Train Car 1: Modifier Slot -->
+                        <div class="relative flex flex-col items-center">
+                            <div id="train-slot-1" onclick="resetTrainSlot(1)" class="w-40 md:w-56 h-28 md:h-36 bg-white border-4 border-dashed border-sky-400 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-sky-600 shadow-xl transition-all p-3 text-center">
+                                <span class="text-xs md:text-sm text-sky-500 font-extrabold mb-1">1. 꾸며주는 말 🚋</span>
+                                <span id="train-slot-1-text" class="text-xl md:text-2xl font-black text-sky-900 drop-shadow-sm">[ 선택 ]</span>
+                            </div>
+                            <!-- Car 1 Wheels -->
+                            <div class="flex justify-around w-full mt-1 px-4 text-gray-700 text-xl md:text-2xl">
+                                <span id="wheel-3" class="inline-block">⚙️</span>
+                                <span id="wheel-4" class="inline-block">⚙️</span>
+                            </div>
+                        </div>
+
+                        <div class="text-3xl font-black text-amber-600 mb-10 font-mono">🔗</div>
+
+                        <!-- Train Car 2: Noun Slot -->
+                        <div class="relative flex flex-col items-center">
+                            <div id="train-slot-2" onclick="resetTrainSlot(2)" class="w-40 md:w-56 h-28 md:h-36 bg-white border-4 border-dashed border-amber-400 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-amber-600 shadow-xl transition-all p-3 text-center">
+                                <span class="text-xs md:text-sm text-amber-500 font-extrabold mb-1">2. 이름 (그림) 🚃</span>
+                                <span id="train-slot-2-text" class="text-xl md:text-2xl font-black text-amber-900 drop-shadow-sm">[ 선택 ]</span>
+                            </div>
+                            <!-- Car 2 Wheels -->
+                            <div class="flex justify-around w-full mt-1 px-4 text-gray-700 text-xl md:text-2xl">
+                                <span id="wheel-5" class="inline-block">⚙️</span>
+                                <span id="wheel-6" class="inline-block">⚙️</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Option Selection Boxes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-amber-100/60 p-4 rounded-2xl border border-amber-200">
+                    <p class="text-center font-bold text-amber-900 text-base mb-2">1단계: 꾸며주는 말 고르기</p>
+                    <div id="train-modifier-options" class="flex flex-wrap gap-2 justify-center"></div>
+                </div>
+
+                <div class="bg-sky-100/60 p-4 rounded-2xl border border-sky-200">
+                    <p class="text-center font-bold text-sky-900 text-base mb-2">2단계: 짝꿍 그림/이름 고르기</p>
+                    <div id="train-noun-options" class="flex flex-wrap gap-2 justify-center"></div>
+                </div>
+            </div>
+
+            <button onclick="checkTrainAnswer()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black text-2xl py-4 rounded-2xl shadow-lg border-b-4 border-emerald-700 pop-card flex items-center justify-center gap-2">
+                <span>🚂 기차 출발시키기!</span>
+            </button>
+        </section>
+
+        <!-- 7. RESULT MODAL -->
+        <section id="result-screen" class="hidden w-full bg-white rounded-3xl border-4 border-amber-400 p-8 shadow-2xl text-center space-y-6">
+            <div class="text-6xl animate-bounce">🎉</div>
+            <div class="space-y-2">
+                <h2 class="text-3xl md:text-4xl font-black text-amber-600">참 잘했어요! 대단해요!</h2>
+                <p class="text-gray-600 text-lg font-bold"><span id="result-user-name">민수</span> 탐험가님, 멋지게 성공했어요!</p>
+            </div>
+
+            <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-200 max-w-md mx-auto space-y-3">
+                <div class="flex justify-between text-lg font-bold text-gray-700">
+                    <span>이번 게임 획득 점수:</span>
+                    <span id="result-gained-score" class="text-2xl text-emerald-600 font-extrabold">+0점</span>
+                </div>
+                <div class="flex justify-between text-xl font-black text-amber-900 border-t border-amber-200 pt-2">
+                    <span>총 누적 점수:</span>
+                    <span id="result-total-score" class="text-3xl text-amber-600 font-black">0점</span>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button onclick="showScreen('mode-screen')" class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-extrabold text-xl px-6 py-4 rounded-2xl shadow-lg border-b-4 border-amber-600 pop-card">
+                    다른 게임 도전하기
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer / Teacher Tip -->
+    <footer class="max-w-4xl mx-auto w-full text-center text-xs md:text-sm text-gray-500 font-bold py-2">
+        💡 <b>선생님 팁:</b> '새빨간', '맛있는', '반짝이는'처럼 대상의 모양, 색, 느낌을 나타내는 꾸밈말을 반복하여 익혀보세요!
+    </footer>
+
+    <script>
+        // Data Structures & App State
+        let currentUser = {
+            name: '',
+            avatar: '🐥',
+            score: 0
+        };
+
+        let selectedAvatar = '🐥';
+        let currentGameMode = 1;
+        let currentQuizIndex = 0;
+        let sessionScore = 0;
+
+        // Balloon Game State
+        let balloonTimerInterval = null;
+        let balloonSpawnInterval = null;
+        let remainingTime = 30;
+
+        // Memory Card State
+        let flippedCards = [];
+        let matchedPairsCount = 0;
+
+        // Train Builder State
+        let trainSelectedModifier = null;
+        let trainSelectedNoun = null;
+
+        // Toast notification handle
+        let toastTimeout = null;
+
+        // Badge Titles Mapping
+        const BADGES = [
+            { score: 0, title: '꾸밈 새싹', icon: '🌱' },
+            { score: 30, title: '말재주꾼', icon: '🐥' },
+            { score: 70, title: '표현 대장', icon: '🦊' },
+            { score: 120, title: '꾸밈왕', icon: '👑' }
+        ];
+
+        // Mode 1 Quizzes
+        const MODE1_QUIZZES = [
+            { image: '🍎', target: '사과', question: '[ ___ ] 사과', options: ['맛있는', '달린다', '의자', '높게'], answer: 0, hint: '사과의 맛이나 느낌을 나타내는 말은?' },
+            { image: '🐶', target: '강아지', question: '[ ___ ] 강아지', options: ['귀여운', '자다', '지우개', '바람'], answer: 0, hint: '귀여운 모습의 강아지를 표현해 봐요!' },
+            { image: '🐘', target: '코끼리', question: '[ ___ ] 코끼리', options: ['작은', '커다란', '날아가다', '연필'], answer: 1, hint: '코끼리는 덩치가 커다랗지요!' },
+            { image: '🚗', target: '자동차', question: '[ ___ ] 자동차', options: ['빠른', '느릿느릿', '공책', '노래하다'], answer: 0, hint: '쌩쌩 달리는 빠른 자동차를 찾아보세요.' },
+            { image: '🌸', target: '꽃', question: '[ ___ ] 꽃', options: ['예쁜', '먹는다', '책상', '슬픈'], answer: 0, hint: '알록달록 아름다운 꽃을 나타내는 말이에요.' }
+        ];
+
+        // Mode 2 Quizzes
+        const MODE2_QUIZZES = [
+            { image: '☀️', question: '하늘에 [ ___ ] 태양이 떠올라요.', options: ['반짝반짝', '쿵쾅쿵쾅', '사각사각', '쿨쿨'], answer: 0, hint: '태양처럼 빛나는 모양을 나타낸 말은?' },
+            { image: '🐢', question: '거북이가 [ ___ ] 기어갑니다.', options: ['엉금엉금', '쌩쌩', '펄쩍펄쩍', '우르릉'], answer: 0, hint: '느린 거북이가 기어가는 모습이에요.' },
+            { image: '🌧️', question: '비가 [ ___ ] 내립니다.', options: ['주륵주륵', '데굴데굴', '화끈화끈', '반짝'], answer: 0, hint: '비가 쏟아지는 소리와 모양을 표현해요.' },
+            { image: '🐇', question: '토끼가 [ ___ ] 뛰어가요.', options: ['깡충깡충', '살금살금', '둥둥', '뚝뚝'], answer: 0, hint: '토끼가 신나게 점프하는 모양입니다.' },
+            { image: '👶', question: '아기가 [ ___ ] 웃고 있어요.', options: ['방글방글', '주룩주룩', '쿵쾅', '더벅더벅'], answer: 0, hint: '아기가 기분 좋게 웃는 예쁜 모습이에요!' }
+        ];
+
+        // Mode 3 Balloon Words
+        const BALLOON_WORDS = [
+            { text: '커다란', isModifier: true },
+            { text: '달콤한', isModifier: true },
+            { text: '알록달록', isModifier: true },
+            { text: '쌩쌩', isModifier: true },
+            { text: '예쁜', isModifier: true },
+            { text: '새빨간', isModifier: true },
+            { text: '하늘', isModifier: false },
+            { text: '책상', isModifier: false },
+            { text: '자다', isModifier: false },
+            { text: '먹다', isModifier: false },
+            { text: '가방', isModifier: false }
+        ];
+
+        // Mode 4 Memory Card Deck
+        const CARD_DECK = [
+            { pairId: 1, text: '새빨간', type: 'mod' },
+            { pairId: 1, text: '🍎 사과', type: 'noun' },
+            { pairId: 2, text: '노란', type: 'mod' },
+            { pairId: 2, text: '🍌 바나나', type: 'noun' },
+            { pairId: 3, text: '반짝이는', type: 'mod' },
+            { pairId: 3, text: '⭐ 별', type: 'noun' },
+            { pairId: 4, text: '귀여운', type: 'mod' },
+            { pairId: 4, text: '🐶 강아지', type: 'noun' }
+        ];
+
+        // Mode 5 Train Quizzes
+        const TRAIN_QUIZZES = [
+            {
+                target: '새빨간 사과',
+                mod: '새빨간',
+                noun: '🍎 사과',
+                modOptions: ['새빨간', '높은', '차가운'],
+                nounOptions: ['🍎 사과', '🚗 자동차', '☁️ 구름']
+            },
+            {
+                target: '쌩쌩 달리는 자동차',
+                mod: '쌩쌩 달리는',
+                noun: '🚗 자동차',
+                modOptions: ['쌩쌩 달리는', '달콤한', '조용한'],
+                nounOptions: ['🚗 자동차', '🌸 꽃', '🎂 케이크']
+            },
+            {
+                target: '달콤한 케이크',
+                mod: '달콤한',
+                noun: '🎂 케이크',
+                modOptions: ['달콤한', '딱딱한', '높은'],
+                nounOptions: ['🎂 케이크', '🐘 코끼리', '⭐ 별']
+            },
+            {
+                target: '커다란 코끼리',
+                mod: '커다란',
+                noun: '🐘 코끼리',
+                modOptions: ['커다란', '작고 가벼운', '동그란'],
+                nounOptions: ['🐘 코끼리', '🐜 개미', '🖊️ 연필']
+            }
+        ];
+
+        // Web Audio Synthesizer
+        function playTone(freq, type = 'sine', duration = 0.2) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log('Audio Context error:', e);
+            }
+        }
+
+        // Custom Toast Notification System (Replaces alert)
+        function showToast(message, icon = '💡') {
+            const toast = document.getElementById('toast-message');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = message;
+            
+            toast.classList.remove('hidden');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2500);
+        }
+
+        // Text-To-Speech (TTS) Voice Reading Function
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current playing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 0.85; // Slower, comfortable reading speed for students
+                utterance.pitch = 1.1; // Soft and friendly pitch
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakWelcomeMessage() {
+            const userName = currentUser.name || '탐험가';
+            const msg = `${userName} 탐험가님, 어떤 공부를 해볼까요? 마음에 드는 게임 버튼을 누르면 신나게 공부할 수 있어요!`;
+            speakText(msg);
+        }
+
+        function speakQuizQuestion() {
+            const quizzes = currentGameMode === 1 ? MODE1_QUIZZES : MODE2_QUIZZES;
+            const quiz = quizzes[currentQuizIndex];
+            if (quiz) {
+                const textToRead = quiz.question.replace('[ ___ ]', '빈칸') + '. ' + quiz.hint;
+                speakText(textToRead);
+            }
+        }
+
+        function playSuccessSound() {
+            playTone(523.25, 'triangle', 0.15); // C5
+            setTimeout(() => playTone(659.25, 'triangle', 0.15), 100); // E5
+            setTimeout(() => playTone(783.99, 'triangle', 0.3), 200); // G5
+        }
+
+        function playWrongSound() {
+            playTone(220, 'sawtooth', 0.2);
+            setTimeout(() => playTone(180, 'sawtooth', 0.3), 150);
+        }
+
+        function playPopSound() {
+            playTone(800, 'sine', 0.1);
+        }
+
+        function playTrainWhistleSound() {
+            playTone(440, 'triangle', 0.3); // A4
+            setTimeout(() => playTone(554.37, 'triangle', 0.4), 100); // C#5
+            setTimeout(() => playTone(659.25, 'triangle', 0.5), 250); // E5
+        }
+
+        window.onload = function() {
+            loadSavedUsersList();
+        };
+
+        function selectAvatar(emoji, element) {
+            selectedAvatar = emoji;
+            document.querySelectorAll('.avatar-opt').forEach(btn => {
+                btn.classList.remove('border-4', 'border-amber-400', 'bg-amber-50');
+                btn.classList.add('border-2', 'border-gray-200');
+            });
+            element.classList.remove('border-2', 'border-gray-200');
+            element.classList.add('border-4', 'border-amber-400', 'bg-amber-50');
+        }
+
+        function getExplorersData() {
+            try {
+                return JSON.parse(localStorage.getItem('explorer_students') || '{}');
+            } catch(e) {
+                return {};
+            }
+        }
+
+        function saveExplorersData(data) {
+            localStorage.setItem('explorer_students', JSON.stringify(data));
+        }
+
+        function loadSavedUsersList() {
+            const data = getExplorersData();
+            const container = document.getElementById('saved-users-container');
+            const list = document.getElementById('saved-users-list');
+            list.innerHTML = '';
+
+            const keys = Object.keys(data);
+            if (keys.length > 0) {
+                container.classList.remove('hidden');
+                keys.forEach(name => {
+                    const userScore = parseInt(data[name].score, 10) || 0;
+                    const btn = document.createElement('button');
+                    btn.className = 'bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold px-3 py-1.5 rounded-xl text-sm flex items-center gap-1 shadow-sm transition';
+                    btn.innerHTML = `<span>${data[name].avatar}</span> <span>${name}</span> <span class="text-xs text-amber-600">(${userScore}점)</span>`;
+                    btn.onclick = () => {
+                        document.getElementById('student-name-input').value = name;
+                        selectedAvatar = data[name].avatar || '🐥';
+                        startExploration();
+                    };
+                    list.appendChild(btn);
+                });
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function changeUser() {
+            showScreen('home-screen');
+        }
+
+        function startExploration() {
+            const input = document.getElementById('student-name-input');
+            const name = input.value.trim();
+
+            if (!name) {
+                showToast('탐험가의 이름을 적어주세요! 😊', '✏️');
+                return;
+            }
+
+            const data = getExplorersData();
+            if (data[name]) {
+                currentUser = { 
+                    name: name, 
+                    avatar: data[name].avatar || selectedAvatar, 
+                    score: parseInt(data[name].score, 10) || 0 
+                };
+            } else {
+                currentUser = { name: name, avatar: selectedAvatar, score: 0 };
+                data[name] = currentUser;
+                saveExplorersData(data);
+            }
+
+            updateUserProfileUI();
+            showScreen('mode-screen');
+        }
+
+        function updateUserProfileUI() {
+            const scoreNum = parseInt(currentUser.score, 10) || 0;
+            currentUser.score = scoreNum;
+
+            document.getElementById('user-profile-bar').classList.remove('hidden');
+            document.getElementById('current-avatar').innerText = currentUser.avatar;
+            document.getElementById('current-user-name').innerText = currentUser.name;
+            document.getElementById('welcome-user-text').innerText = currentUser.name;
+            
+            const scoreEl = document.getElementById('cumulative-score');
+            if (scoreEl) {
+                scoreEl.innerText = scoreNum;
+                scoreEl.classList.remove('animate-bounce');
+                void scoreEl.offsetWidth; // trigger reflow
+                scoreEl.classList.add('animate-bounce');
+            }
+
+            // Calculate Badge Title
+            let currentBadge = BADGES[0];
+            BADGES.forEach(b => {
+                if (scoreNum >= b.score) {
+                    currentBadge = b;
+                }
+            });
+            document.getElementById('current-badge-title').innerText = `${currentBadge.icon} ${currentBadge.title}`;
+
+            // Render Badge Collection
+            const badgeContainer = document.getElementById('badge-collection');
+            badgeContainer.innerHTML = '';
+            BADGES.forEach(b => {
+                const unlocked = scoreNum >= b.score;
+                const badgeEl = document.createElement('div');
+                badgeEl.className = `px-2.5 py-1 rounded-xl border text-sm font-bold flex items-center gap-1 ${unlocked ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-gray-100 border-gray-200 text-gray-400 opacity-60'}`;
+                badgeEl.innerHTML = `<span>${b.icon}</span> <span>${b.title}</span>`;
+                badgeContainer.appendChild(badgeEl);
+            });
+        }
+
+        function addScore(points) {
+            const added = parseInt(points, 10) || 0;
+            if (added <= 0) return;
+
+            currentUser.score = (parseInt(currentUser.score, 10) || 0) + added;
+            
+            const data = getExplorersData();
+            if (currentUser.name) {
+                data[currentUser.name] = {
+                    name: currentUser.name,
+                    avatar: currentUser.avatar,
+                    score: currentUser.score
+                };
+                saveExplorersData(data);
+            }
+            updateUserProfileUI();
+        }
+
+        function backToMenu() {
+            if (sessionScore > 0) {
+                addScore(sessionScore);
+                sessionScore = 0;
+            }
+            showScreen('mode-screen');
+        }
+
+        function showScreen(screenId) {
+            const screens = ['home-screen', 'mode-screen', 'game-screen', 'balloon-screen', 'card-screen', 'train-screen', 'result-screen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if (screenId === 'mode-screen') {
+                setTimeout(speakWelcomeMessage, 300);
+            }
+
+            if (screenId !== 'balloon-screen' && balloonTimerInterval) {
+                clearInterval(balloonTimerInterval);
+                clearInterval(balloonSpawnInterval);
+            }
+        }
+
+        function launchGame(mode) {
+            currentGameMode = mode;
+            sessionScore = 0;
+
+            if (mode === 1 || mode === 2) {
+                currentQuizIndex = 0;
+                document.getElementById('game-session-score').innerText = '0';
+                renderQuizQuestion();
+                showScreen('game-screen');
+            } else if (mode === 3) {
+                startBalloonGame();
+            } else if (mode === 4) {
+                startCardGame();
+            } else if (mode === 5) {
+                startTrainGame();
+            }
+        }
+
+        function renderQuizQuestion() {
+            const quizzes = currentGameMode === 1 ? MODE1_QUIZZES : MODE2_QUIZZES;
+            const quiz = quizzes[currentQuizIndex];
+
+            document.getElementById('quiz-current-num').innerText = currentQuizIndex + 1;
+            document.getElementById('quiz-total-num').innerText = quizzes.length;
+            document.getElementById('quiz-image').innerText = quiz.image;
+            document.getElementById('quiz-question').innerText = quiz.question;
+            document.getElementById('quiz-hint').innerText = quiz.hint;
+
+            const feedback = document.getElementById('feedback-message');
+            feedback.classList.add('hidden');
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            quiz.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-amber-50 hover:bg-amber-200 border-4 border-amber-200 text-gray-800 text-2xl font-bold p-5 rounded-2xl shadow-md pop-card transition-all text-center';
+                btn.innerText = optText;
+                btn.onclick = () => checkQuizAnswer(index, quiz.answer, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(selectedIndex, correctIndex, element) {
+            const options = document.querySelectorAll('#quiz-options button');
+            options.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('feedback-message');
+            feedback.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-700', 'bg-rose-100', 'text-rose-700');
+
+            if (selectedIndex === correctIndex) {
+                playSuccessSound();
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                element.classList.add('bg-emerald-300', 'border-emerald-500');
+                feedback.classList.add('bg-emerald-100', 'text-emerald-700');
+                feedback.innerText = '⭕ 정답이에요! 아주 멋져요!';
+                sessionScore += 10;
+                document.getElementById('game-session-score').innerText = sessionScore;
+            } else {
+                playWrongSound();
+                element.classList.add('bg-rose-300', 'border-rose-500');
+                options[correctIndex].classList.add('bg-emerald-200', 'border-emerald-400');
+                feedback.classList.add('bg-rose-100', 'text-rose-700');
+                feedback.innerText = '❌ 괜찮아요! 다음에는 맞힐 수 있어요!';
+            }
+
+            setTimeout(() => {
+                const quizzes = currentGameMode === 1 ? MODE1_QUIZZES : MODE2_QUIZZES;
+                currentQuizIndex++;
+                if (currentQuizIndex < quizzes.length) {
+                    renderQuizQuestion();
+                } else {
+                    finishGameSession();
+                }
+            }, 1600);
+        }
+
+        function startBalloonGame() {
+            showScreen('balloon-screen');
+            remainingTime = 30;
+            sessionScore = 0;
+            document.getElementById('balloon-timer').innerText = remainingTime;
+            const stage = document.getElementById('balloon-stage');
+            stage.innerHTML = '';
+
+            balloonTimerInterval = setInterval(() => {
+                remainingTime--;
+                document.getElementById('balloon-timer').innerText = remainingTime;
+                if (remainingTime <= 0) {
+                    endBalloonGame();
+                }
+            }, 1000);
+
+            balloonSpawnInterval = setInterval(spawnBalloon, 1200);
+            spawnBalloon();
+            spawnBalloon();
+        }
+
+        function spawnBalloon() {
+            const stage = document.getElementById('balloon-stage');
+            if (!stage || remainingTime <= 0) return;
+
+            const data = BALLOON_WORDS[Math.floor(Math.random() * BALLOON_WORDS.length)];
+            const balloon = document.createElement('div');
+            
+            const colors = ['bg-rose-400', 'bg-amber-400', 'bg-emerald-400', 'bg-sky-400', 'bg-purple-400'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const randomLeft = Math.floor(Math.random() * 75) + 5;
+            const duration = Math.floor(Math.random() * 3) + 4;
+
+            balloon.className = `balloon-item ${randomColor} text-white font-black text-lg md:text-xl px-4 py-6 rounded-full shadow-lg border-2 border-white flex flex-col items-center justify-center cursor-pointer transition-all active:scale-90`;
+            balloon.style.left = `${randomLeft}%`;
+            balloon.style.animationDuration = `${duration}s`;
+            balloon.innerHTML = `<span>🎈</span><span>${data.text}</span>`;
+
+            balloon.onclick = (e) => {
+                e.stopPropagation();
+
+                const rect = stage.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const feedbackEl = document.createElement('div');
+                feedbackEl.className = 'floating-feedback px-3 py-1.5 rounded-2xl text-sm md:text-base border-2 flex items-center gap-1 shadow-xl';
+
+                if (data.isModifier) {
+                    playSuccessSound();
+                    confetti({ particleCount: 25, spread: 40, origin: { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight } });
+                    sessionScore += 10;
+                    
+                    feedbackEl.classList.add('bg-emerald-500', 'text-white', 'border-emerald-200');
+                    feedbackEl.innerHTML = '⭕ 정답! (+10점)';
+
+                    balloon.className = balloon.className.replace(/bg-[a-z]+-400/g, 'bg-emerald-500') + ' scale-125';
+                    balloon.innerHTML = `<span class="text-2xl">⭕</span><span class="font-extrabold text-sm">꾸밈말!</span>`;
+                } else {
+                    playWrongSound();
+                    sessionScore = Math.max(0, sessionScore - 5);
+
+                    feedbackEl.classList.add('bg-rose-500', 'text-white', 'border-rose-200');
+                    feedbackEl.innerHTML = '❌ 아니에요! (-5점)';
+
+                    balloon.className = balloon.className.replace(/bg-[a-z]+-400/g, 'bg-gray-500') + ' scale-90';
+                    balloon.innerHTML = `<span class="text-2xl">❌</span><span class="font-extrabold text-xs">꾸밈말 아님</span>`;
+                }
+
+                feedbackEl.style.left = `${Math.max(10, Math.min(rect.width - 130, clickX - 40))}px`;
+                feedbackEl.style.top = `${Math.max(10, clickY - 20)}px`;
+                stage.appendChild(feedbackEl);
+
+                setTimeout(() => feedbackEl.remove(), 900);
+                setTimeout(() => balloon.remove(), 250);
+            };
+
+            balloon.onanimationend = () => balloon.remove();
+            stage.appendChild(balloon);
+        }
+
+        function endBalloonGame() {
+            clearInterval(balloonTimerInterval);
+            clearInterval(balloonSpawnInterval);
+            finishGameSession();
+        }
+
+        function startCardGame() {
+            showScreen('card-screen');
+            sessionScore = 0;
+            matchedPairsCount = 0;
+            flippedCards = [];
+            document.getElementById('card-pairs-found').innerText = matchedPairsCount;
+
+            const grid = document.getElementById('card-grid');
+            grid.innerHTML = '';
+
+            const shuffledDeck = [...CARD_DECK].sort(() => Math.random() - 0.5);
+
+            shuffledDeck.forEach((cardData, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card-perspective h-28 md:h-36 cursor-pointer';
+                card.dataset.pairId = cardData.pairId;
+                card.dataset.index = idx;
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front bg-gradient-to-br from-purple-400 to-indigo-500 text-white font-black text-3xl border-4 border-white">
+                            ❓
+                        </div>
+                        <div class="card-back bg-white border-4 border-purple-300 text-purple-900 font-extrabold text-lg md:text-xl text-center p-2">
+                            ${cardData.text}
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = () => handleCardClick(card, cardData);
+                grid.appendChild(card);
+            });
+        }
+
+        function handleCardClick(cardEl, cardData) {
+            if (flippedCards.length >= 2 || cardEl.classList.contains('card-flipped') || cardEl.dataset.matched === 'true') {
+                return;
+            }
+
+            playPopSound();
+            cardEl.classList.add('card-flipped');
+            flippedCards.push({ element: cardEl, data: cardData });
+
+            if (flippedCards.length === 2) {
+                const [card1, card2] = flippedCards;
+                if (card1.data.pairId === card2.data.pairId && card1.data.type !== card2.data.type) {
+                    playSuccessSound();
+                    confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+                    card1.element.dataset.matched = 'true';
+                    card2.element.dataset.matched = 'true';
+                    matchedPairsCount++;
+                    sessionScore += 15;
+                    document.getElementById('card-pairs-found').innerText = matchedPairsCount;
+                    flippedCards = [];
+
+                    if (matchedPairsCount === 4) {
+                        setTimeout(() => finishGameSession(), 1200);
+                    }
+                } else {
+                    playWrongSound();
+                    setTimeout(() => {
+                        card1.element.classList.remove('card-flipped');
+                        card2.element.classList.remove('card-flipped');
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        function startTrainGame() {
+            showScreen('train-screen');
+            currentQuizIndex = 0;
+            sessionScore = 0;
+            document.getElementById('train-session-score').innerText = '0';
+            renderTrainQuiz();
+        }
+
+        function renderTrainQuiz() {
+            const quiz = TRAIN_QUIZZES[currentQuizIndex];
+            trainSelectedModifier = null;
+            trainSelectedNoun = null;
+
+            document.getElementById('train-current-num').innerText = currentQuizIndex + 1;
+            document.getElementById('train-total-num').innerText = TRAIN_QUIZZES.length;
+            document.getElementById('train-target-text').innerText = `"${quiz.target}"`;
+
+            document.getElementById('train-slot-1-text').innerText = '[ 선택 ]';
+            document.getElementById('train-slot-2-text').innerText = '[ 선택 ]';
+
+            const modContainer = document.getElementById('train-modifier-options');
+            modContainer.innerHTML = '';
+            quiz.modOptions.sort(() => Math.random() - 0.5).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-sky-200 hover:bg-sky-300 text-sky-900 font-bold px-4 py-2 rounded-xl text-base transition pop-card';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    playPopSound();
+                    trainSelectedModifier = opt;
+                    document.getElementById('train-slot-1-text').innerText = opt;
+                };
+                modContainer.appendChild(btn);
+            });
+
+            const nounContainer = document.getElementById('train-noun-options');
+            nounContainer.innerHTML = '';
+            quiz.nounOptions.sort(() => Math.random() - 0.5).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold px-4 py-2 rounded-xl text-base transition pop-card';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    playPopSound();
+                    trainSelectedNoun = opt;
+                    document.getElementById('train-slot-2-text').innerText = opt;
+                };
+                nounContainer.appendChild(btn);
+            });
+        }
+
+        function resetTrainSlot(slotNum) {
+            playPopSound();
+            if (slotNum === 1) {
+                trainSelectedModifier = null;
+                document.getElementById('train-slot-1-text').innerText = '[ 선택 ]';
+            } else {
+                trainSelectedNoun = null;
+                document.getElementById('train-slot-2-text').innerText = '[ 선택 ]';
+            }
+        }
+
+        function checkTrainAnswer() {
+            const quiz = TRAIN_QUIZZES[currentQuizIndex];
+
+            if (!trainSelectedModifier || !trainSelectedNoun) {
+                showToast('기차 칸 2개를 모두 선택해 주세요!', '🚋');
+                return;
+            }
+
+            if (trainSelectedModifier === quiz.mod && trainSelectedNoun === quiz.noun) {
+                playSuccessSound();
+                playTrainWhistleSound();
+                confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 } });
+
+                const completeSentence = `${trainSelectedModifier} ${trainSelectedNoun.replace(/^[^\s]+\s/, '')}`;
+                speakText(`${completeSentence}! 칙칙폭폭 기차 출발!`);
+
+                sessionScore += 15;
+                document.getElementById('train-session-score').innerText = sessionScore;
+
+                const trainContainer = document.getElementById('train-track-container');
+                const steamCloud = document.getElementById('train-steam-cloud');
+                
+                steamCloud.classList.remove('hidden');
+                trainContainer.classList.add('animate-train-circuit');
+
+                document.querySelectorAll('#train-assembly-box [id^="wheel-"]').forEach(w => w.classList.add('animate-spin'));
+
+                setTimeout(() => {
+                    trainContainer.classList.remove('animate-train-circuit');
+                    steamCloud.classList.add('hidden');
+                    document.querySelectorAll('#train-assembly-box [id^="wheel-"]').forEach(w => w.classList.remove('animate-spin'));
+
+                    currentQuizIndex++;
+                    if (currentQuizIndex < TRAIN_QUIZZES.length) {
+                        renderTrainQuiz();
+                    } else {
+                        finishGameSession();
+                    }
+                }, 3300);
+            } else {
+                playWrongSound();
+                showToast('짝꿍이 맞지 않아요! 다시 알맞은 기차칸을 골라보세요.', '❌');
+            }
+        }
+
+        function finishGameSession() {
+            addScore(sessionScore);
+            document.getElementById('result-user-name').innerText = currentUser.name;
+            document.getElementById('result-gained-score').innerText = `+${sessionScore}점`;
+            document.getElementById('result-total-score').innerText = `${currentUser.score}점`;
+
+            showScreen('result-screen');
+            confetti({ particleCount: 80, spread: 100, origin: { y: 0.5 } });
+        }
+    </script>
+</body>
+</html>
